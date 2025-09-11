@@ -6,6 +6,7 @@ import (
 	"catfacts/internal"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
@@ -195,7 +196,35 @@ func homeHandler(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(w, html)
 }
 
+// Admin API handlers
+func readyHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func aliveHandler(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Alive")
+}
+
+// Start Admin API server
+func startAdminServer() {
+	adminMux := http.NewServeMux()
+	adminMux.HandleFunc("/_/ready", readyHandler)
+	adminMux.HandleFunc("/_/alive", aliveHandler)
+
+	fmt.Println("🔧 Admin API available at http://localhost:11666")
+	fmt.Println("   - Health check: http://localhost:11666/_/alive")
+	fmt.Println("   - Readiness probe: http://localhost:11666/_/ready")
+
+	if err := http.ListenAndServe(":11666", adminMux); err != nil {
+		log.Printf("Error starting admin server: %v\n", err)
+	}
+}
+
 func main() {
+	// Start Admin API in a separate goroutine
+	go startAdminServer()
+
 	// API endpoints
 	http.HandleFunc("/phase-one", phaseOneAPI)
 	http.HandleFunc("/phase-two", phaseTwoAPI)

@@ -6,6 +6,7 @@ A Go application that fetches and displays cat facts from the Cat Facts API. The
 
 - **CLI Client**: Interactive command-line interface for fetching cat facts
 - **HTTP Server**: RESTful API endpoints for programmatic access
+- **Admin API**: Health check and readiness endpoints for monitoring and Kubernetes probes
 - **Three Phases**: Different modes of operation for fetching facts
     - Phase 1: Fetch a single cat fact
     - Phase 2: Fetch 5 cat facts sequentially
@@ -19,7 +20,7 @@ catfacts/
 │   ├── client/
 │   │   └── main.go     # CLI client application
 │   └── server/
-│       └── main.go     # HTTP server application
+│       └── main.go     # HTTP server application with Admin API
 ├── internal/
 │   └── phases.go       # Core business logic
 ├── docs/
@@ -57,18 +58,22 @@ The client will prompt you to select a phase (1, 2, or 3) and display the corres
 go run cmd/server/main.go
 ```
 
-The server will start on port 8090 by default.
+The server will start:
+- Main API on port 8090
+- Admin API on port 11666
 
 ## API Endpoints
 
-### Base URL
+### Main API - Port 8090
+
+#### Base URL
 ```
 http://localhost:8090
 ```
 
-### Endpoints
+#### Endpoints
 
-#### GET /phase-one
+##### GET /phase-one
 Fetches a single cat fact.
 
 **Response:**
@@ -76,7 +81,7 @@ Fetches a single cat fact.
 A cat fact string
 ```
 
-#### GET /phase-two
+##### GET /phase-two
 Fetches 5 cat facts sequentially.
 
 **Response:**
@@ -88,7 +93,7 @@ Fetches 5 cat facts sequentially.
 5. Fifth cat fact
 ```
 
-#### GET /phase-three
+##### GET /phase-three
 Fetches 10 cat facts concurrently using goroutines.
 
 **Response:**
@@ -99,13 +104,48 @@ Fetches 10 cat facts concurrently using goroutines.
 10. Tenth cat fact
 ```
 
-#### GET /headers
+##### GET /headers
 Debug endpoint that returns all request headers.
 
 **Response:**
 ```
 Header-Name: header-value
 ...
+```
+
+### Admin API - Port 11666
+
+The Admin API provides health check and readiness endpoints for monitoring and Kubernetes probes.
+
+#### Base URL
+```
+http://localhost:11666
+```
+
+#### Endpoints
+
+##### GET /_/ready
+Readiness probe endpoint. Returns when the application is ready to accept traffic.
+
+**Response:**
+- Status: `200 OK`
+- Body: (empty)
+
+**Usage:**
+```bash
+curl http://localhost:11666/_/ready
+```
+
+##### GET /_/alive
+Liveness probe endpoint. Returns as long as the application is alive.
+
+**Response:**
+- Status: `200 OK`
+- Body: `Alive`
+
+**Usage:**
+```bash
+curl http://localhost:11666/_/alive
 ```
 
 ## API Documentation
@@ -137,17 +177,37 @@ Run tests:
 go test ./...
 ```
 
-### Adding Swagger UI (Optional)
+### Health Checks
 
-To add Swagger UI to your server, you can use the `swaggo/http-swagger` package:
-
-1. Install the package:
+Test the Admin API endpoints:
 ```bash
-go get -u github.com/swaggo/http-swagger
-go get -u github.com/swaggo/files
+# Check if the service is alive
+curl http://localhost:11666/_/alive
+
+# Check if the service is ready
+curl http://localhost:11666/_/ready
 ```
 
-2. Add the Swagger UI handler to your server (see server code for implementation)
+### Kubernetes Integration
+
+The Admin API endpoints are designed to work with Kubernetes probes:
+
+```yaml
+# Example Kubernetes deployment configuration
+livenessProbe:
+  httpGet:
+    path: /_/alive
+    port: 11666
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /_/ready
+    port: 11666
+  initialDelaySeconds: 5
+  periodSeconds: 5
+```
 
 ## External Dependencies
 
