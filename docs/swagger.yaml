@@ -1,0 +1,172 @@
+openapi: 3.0.3
+info:
+  title: Cat Facts API
+  description: |
+    A Go application that fetches and displays cat facts from the Cat Facts API.
+    The server provides different phases of cat fact retrieval with varying complexity.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8090
+    description: Local development server
+
+tags:
+  - name: Cat Facts
+    description: Endpoints for retrieving cat facts
+  - name: Debug
+    description: Debug and utility endpoints
+
+paths:
+  /phase-one:
+    get:
+      tags:
+        - Cat Facts
+      summary: Get a single cat fact
+      description: Fetches one cat fact from the external Cat Facts API
+      operationId: getPhaseOne
+      responses:
+        '200':
+          description: Successful response with a single cat fact
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Cats have 32 muscles in each ear."
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Error fetching cat fact"
+
+  /phase-two:
+    get:
+      tags:
+        - Cat Facts
+      summary: Get 5 cat facts sequentially
+      description: Fetches 5 cat facts from the external API in sequential order
+      operationId: getPhaseTwo
+      responses:
+        '200':
+          description: Successful response with 5 numbered cat facts
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  1. Cats have 32 muscles in each ear.
+                  2. A cat's nose pad is ridged with a unique pattern, just like a human fingerprint.
+                  3. Cats sleep 70% of their lives.
+                  4. A cat has five toes on his front paws, and four on the back.
+                  5. The oldest known pet cat was found in a 9,500-year-old grave on Cyprus.
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Error fetching cat facts"
+
+  /phase-three:
+    get:
+      tags:
+        - Cat Facts
+      summary: Get 10 cat facts concurrently
+      description: |
+        Fetches 10 cat facts from the external API using concurrent goroutines.
+        This endpoint demonstrates concurrent API calls and may return facts in a different order
+        than they were requested due to the concurrent nature of the requests.
+      operationId: getPhaseThree
+      responses:
+        '200':
+          description: Successful response with 10 numbered cat facts
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  1. Cats have 32 muscles in each ear.
+                  2. A cat's nose pad is ridged with a unique pattern, just like a human fingerprint.
+                  3. Cats sleep 70% of their lives.
+                  4. A cat has five toes on his front paws, and four on the back.
+                  5. The oldest known pet cat was found in a 9,500-year-old grave on Cyprus.
+                  6. Cats can rotate their ears 180 degrees.
+                  7. The hearing of the average cat is at least five times keener than that of a human adult.
+                  8. In the largest cat breed, the average male weighs approximately 20 pounds.
+                  9. Cats spend nearly 1/3 of their waking hours cleaning themselves.
+                  10. A cat's jaw can't move sideways, so a cat can't chew large chunks of food.
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Error fetching cat facts"
+
+  /headers:
+    get:
+      tags:
+        - Debug
+      summary: Display request headers
+      description: |
+        Debug endpoint that returns all HTTP headers from the incoming request.
+        Useful for debugging proxy configurations, authentication headers, and client information.
+      operationId: getHeaders
+      parameters:
+        - in: header
+          name: X-Custom-Header
+          schema:
+            type: string
+          required: false
+          description: Example custom header for demonstration
+      responses:
+        '200':
+          description: Successful response with all request headers
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |
+                  Accept: text/html,application/xhtml+xml
+                  Accept-Encoding: gzip, deflate, br
+                  Accept-Language: en-US,en;q=0.9
+                  Connection: keep-alive
+                  Host: localhost:8090
+                  User-Agent: Mozilla/5.0
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Failed to fetch cat fact from external API"
+        status_code:
+          type: integer
+          description: HTTP status code
+          example: 500
+      required:
+        - error
+        - status_code
+
+    CatFact:
+      type: object
+      properties:
+        fact:
+          type: string
+          description: A cat fact
+          example: "Cats have 32 muscles in each ear."
+        length:
+          type: integer
+          description: Length of the fact in characters
+          example: 33
+      required:
+        - fact
+        - length
+
+externalDocs:
+  description: Cat Facts API Documentation
+  url: https://catfact.ninja/
