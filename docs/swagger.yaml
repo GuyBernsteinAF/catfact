@@ -104,6 +104,79 @@ paths:
                 type: string
                 example: "Error fetching cat facts"
 
+  /cat-facts:
+    get:
+      tags:
+        - Cat Facts
+      summary: Get personalized cat facts (Phase Four)
+      description: |
+        Fetches a customizable number of cat facts with a personalized greeting.
+        This endpoint demonstrates concurrent fetching with JSON response format and input validation.
+      operationId: getCatFacts
+      parameters:
+        - in: query
+          name: name
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z]{1,32}$'
+          description: |
+            Your name (required). Must be a single word containing only letters, 1-32 characters long.
+          example: Guy
+        - in: query
+          name: amount
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+            default: 1
+          description: |
+            Number of cat facts to retrieve (optional). Must be between 1 and 10. Defaults to 1.
+          example: 3
+      responses:
+        '200':
+          description: Successful response with personalized cat facts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              example:
+                message: "Hello Guy, here are you cat facts"
+                facts:
+                  - "Cats have 32 muscles in each ear."
+                  - "A cat's nose pad is ridged with a unique pattern, just like a human fingerprint."
+                  - "Cats sleep 70% of their lives."
+        '400':
+          description: Bad request - validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: Missing name parameter
+                  value:
+                    message: "name is required"
+                invalidAmount:
+                  summary: Invalid amount parameter
+                  value:
+                    message: "amount must be an integer between 1 and 10 (or not required)"
+                nameWithSpace:
+                  summary: Name contains space
+                  value:
+                    message: "name is a single word with length 1-32"
+                nameNotAlphabetic:
+                  summary: Name contains non-alphabetic characters
+                  value:
+                    message: "name should be alphabetic"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /headers:
     get:
       tags:
@@ -137,20 +210,34 @@ paths:
 
 components:
   schemas:
-    Error:
+    ErrorResponse:
       type: object
       properties:
-        error:
+        message:
           type: string
-          description: Error message
-          example: "Failed to fetch cat fact from external API"
-        status_code:
-          type: integer
-          description: HTTP status code
-          example: 500
+          description: Error message describing what went wrong
+          example: "name is required"
       required:
-        - error
-        - status_code
+        - message
+
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Personalized greeting message
+          example: "Hello Guy, here are you cat facts"
+        facts:
+          type: array
+          items:
+            type: string
+          description: Array of cat facts
+          example:
+            - "Cats have 32 muscles in each ear."
+            - "A cat's nose pad is ridged with a unique pattern, just like a human fingerprint."
+      required:
+        - message
+        - facts
 
     CatFact:
       type: object
