@@ -4,12 +4,25 @@ import (
 	"bytes"
 	"catfacts/docs"
 	"catfacts/internal"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"unicode"
 )
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type SuccessResponse struct {
+	Message string   `json:"message"`
+	Facts   []string `json:"facts"`
+}
 
 func captureStdout(f func()) string {
 	// Save the original stdout
@@ -51,6 +64,57 @@ func phaseTwoAPI(w http.ResponseWriter, req *http.Request) {
 
 func phaseThreeAPI(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, captureStdout(internal.PhaseThree))
+}
+
+func phaseFourAPI(w http.ResponseWriter, req *http.Request) {
+	name := req.URL.Query().Get("name")
+	amount := req.URL.Query().Get("amount")
+	w.Header().Set("Content-Type", "application/json")
+
+	if amount == "" {
+		amount = "1"
+	}
+
+	if !validate(w, amount, name) {
+		return
+	}
+
+	res := SuccessResponse{Message: "Hello " + name + ", here are you cat facts"}
+	intAmount, _ := strconv.Atoi(amount)
+	res.Facts = internal.PhaseFour(intAmount)
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(res)
+	return
+
+}
+
+func validate(w http.ResponseWriter, amount string, name string) bool {
+	if am, err := strconv.Atoi(amount); err != nil || am <= 0 || am > 10 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"amount must be an integer between 1 and 10 (or not required)"})
+		return false
+	}
+
+	if name == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"name is required"})
+		return false
+	}
+
+	if len(name) > 32 || strings.Contains(name, " ") {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"name is a single word with length 1-32"})
+		return false
+	}
+
+	for _, c := range name {
+		if !unicode.IsLetter(rune(c)) {
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(ErrorResponse{"name should be alphabetic"})
+			return false
+		}
+	}
+	return true
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
@@ -161,6 +225,22 @@ func homeHandler(w http.ResponseWriter, req *http.Request) {
             background: #75da1d;
             text-decoration: none;
         }
+        .code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .new-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin-left: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -178,8 +258,29 @@ func homeHandler(w http.ResponseWriter, req *http.Request) {
             <li><strong>GET</strong> <a href="/phase-one">/phase-one</a> - Get a single cat fact</li>
             <li><strong>GET</strong> <a href="/phase-two">/phase-two</a> - Get 5 cat facts (sequential)</li>
             <li><strong>GET</strong> <a href="/phase-three">/phase-three</a> - Get 10 cat facts (concurrent)</li>
+            <li><strong>GET</strong> <a href="/cat-facts?name=Friend&amount=3">/cat-facts</a> <span class="new-badge">NEW</span> - Get personalized cat facts (JSON response)
+                <ul style="margin-top: 5px;">
+                    <li>Required: <span class="code">name</span> - Your name (letters only, max 32 chars)</li>
+                    <li>Optional: <span class="code">amount</span> - Number of facts (1-10, default: 1)</li>
+                    <li>Example: <span class="code">/cat-facts?name=Guy&amount=3</span></li>
+                </ul>
+            </li>
             <li><strong>GET</strong> <a href="/headers">/headers</a> - Debug: View request headers</li>
         </ul>
+    </div>
+
+    <div class="card">
+        <h2>Quick Examples:</h2>
+        <p>Try these commands in your terminal:</p>
+        <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto;">
+# Get a single fact for Guy
+curl "localhost:8090/cat-facts?name=Guy"
+
+# Get 5 facts for Alice
+curl "localhost:8090/cat-facts?name=Alice&amount=5"
+
+# Using single quotes (alternative)
+curl 'localhost:8090/cat-facts?name=Bob&amount=3'</pre>
     </div>
 
     <div class="card">
@@ -230,6 +331,7 @@ func main() {
 	http.HandleFunc("/phase-two", phaseTwoAPI)
 	http.HandleFunc("/phase-three", phaseThreeAPI)
 	http.HandleFunc("/headers", headers)
+	http.HandleFunc("/cat-facts", phaseFourAPI)
 
 	// Documentation endpoints
 	http.HandleFunc("/", homeHandler)
