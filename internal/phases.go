@@ -62,3 +62,18 @@ func PhaseOne() {
 	fmt.Printf("%s\n", fact)
 	fmt.Println()
 }
+
+func PhaseFour(amount int) []string {
+	ch := make(chan string, amount)
+	for i := 0; i < amount; i++ {
+		go func() {
+			fact := GetFact("https://catfact.ninja/fact")
+			ch <- fact
+		}()
+	}
+	var result []string
+	for i := 0; i < amount; i++ {
+		result = append(result, <-ch)
+	}
+	return result
+}

@@ -4,12 +4,25 @@ import (
 	"bytes"
 	"catfacts/docs"
 	"catfacts/internal"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"unicode"
 )
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+type SuccessResponse struct {
+	Message string   `json:"message"`
+	Facts   []string `json:"facts"`
+}
 
 func captureStdout(f func()) string {
 	// Save the original stdout
@@ -51,6 +64,57 @@ func phaseTwoAPI(w http.ResponseWriter, req *http.Request) {
 
 func phaseThreeAPI(w http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(w, captureStdout(internal.PhaseThree))
+}
+
+func phaseFourAPI(w http.ResponseWriter, req *http.Request) {
+	name := req.URL.Query().Get("name")
+	amount := req.URL.Query().Get("amount")
+	w.Header().Set("Content-Type", "application/json")
+
+	if amount == "" {
+		amount = "1"
+	}
+
+	if !validate(w, amount, name) {
+		return
+	}
+
+	res := SuccessResponse{Message: "Hello " + name + ", here are you cat facts"}
+	intAmount, _ := strconv.Atoi(amount)
+	res.Facts = internal.PhaseFour(intAmount)
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(res)
+	return
+
+}
+
+func validate(w http.ResponseWriter, amount string, name string) bool {
+	if am, err := strconv.Atoi(amount); err != nil || am <= 0 || am > 10 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"amount must be an integer between 1 and 10 (or not required)"})
+		return false
+	}
+
+	if name == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"name is required"})
+		return false
+	}
+
+	if len(name) > 32 || strings.Contains(name, " ") {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(ErrorResponse{"name is a single word with length 1-32"})
+		return false
+	}
+
+	for _, c := range name {
+		if !unicode.IsLetter(rune(c)) {
+			w.WriteHeader(400)
+			json.NewEncoder(w).Encode(ErrorResponse{"name should be alphabetic"})
+			return false
+		}
+	}
+	return true
 }
 
 func headers(w http.ResponseWriter, req *http.Request) {
@@ -230,6 +294,7 @@ func main() {
 	http.HandleFunc("/phase-two", phaseTwoAPI)
 	http.HandleFunc("/phase-three", phaseThreeAPI)
 	http.HandleFunc("/headers", headers)
+	http.HandleFunc("/cat-facts", phaseFourAPI)
 
 	// Documentation endpoints
 	http.HandleFunc("/", homeHandler)
