@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +10,12 @@ import (
 )
 
 func GetFact(url string) string {
-	res, err := http.Get(url)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	res, err := client.Get(url)
 	if err != nil {
 		panic(err)
 	}
