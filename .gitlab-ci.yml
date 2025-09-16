@@ -1,0 +1,34 @@
+image: 092574054921.dkr.ecr.eu-west-1.amazonaws.com/prd/base-images/tools/go-golden-path:latest
+
+include:
+  - project: 'platform/golden-path/templates/go/ci'
+    ref: 'v2.0.0'
+    file: 'ci.yml'
+
+stages:
+  - publish
+
+workflow:
+  rules:
+    # If we have an open Merge Request, run the pipeline
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    # If the branch was just merged to the default branch (master/main), run the pipeline
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+      # otherwise, never run the pipeline
+    - when: never
+
+
+publish:
+  stage: publish
+  extends:
+    - .image-publish
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always  # run on merge request
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: always # run on merge to master
+    - when: never
+
+
