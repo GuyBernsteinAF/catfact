@@ -55,15 +55,15 @@ func captureStdout(f func()) string {
 }
 
 func phaseOneAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseOne))
+	fmt.Fprint(w, captureStdout(internal.PhaseOne))
 }
 
 func phaseTwoAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseTwo))
+	fmt.Fprint(w, captureStdout(internal.PhaseTwo))
 }
 
 func phaseThreeAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseThree))
+	fmt.Fprint(w, captureStdout(internal.PhaseThree))
 }
 
 func phaseFourAPI(w http.ResponseWriter, req *http.Request) {

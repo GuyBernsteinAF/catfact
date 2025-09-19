@@ -6,6 +6,7 @@ include:
     file: 'ci.yml'
 
 stages:
+  - test
   - publish
 
 workflow:
@@ -19,7 +20,12 @@ workflow:
       # otherwise, never run the pipeline
     - when: never
 
+unit-test:
+  stage: test
+  extends:
+    - .unit-test
 
+# Publish stage - only runs if tests pass
 publish:
   stage: publish
   extends:
@@ -30,3 +36,4 @@ publish:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: always # run on merge to master
     - when: never
+  needs: ["unit-test"]  # Ensures tests must pass before publishing

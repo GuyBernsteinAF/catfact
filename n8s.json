@@ -1,0 +1,40 @@
+{
+  "envType": "test",
+  "namespace": "guy-bernstein-training",
+  "team": "general",
+  "retention": "12h",
+  "globalEnvVariables": {
+    "AF_ENVTYPE": "test",
+    "AF_LOG_LEVEL": "info",
+    "AF_DEPLOYER": "n8s"
+  },
+  "services": [
+    {
+      "id": "cat-facts",
+      "image": {
+        "mode": "default",
+        "service": "space-cadets-cat-facts",
+        "branch": "main",
+        "runCommand": "./server"
+      },
+      "requirements": {
+        "mem": 1000,
+        "ports": [
+          8080
+        ]
+      },
+      "checks": [
+        {
+          "path": "/_/ready",
+          "healthPort": 11666,
+          "gracePeriodSeconds": 30
+        },
+        {
+          "path": "/_/alive",
+          "healthPort": 11666,
+          "gracePeriodSeconds": 30
+        }
+      ]
+    }
+  ]
+}
