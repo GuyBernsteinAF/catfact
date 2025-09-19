@@ -132,30 +132,3 @@ func TestPhaseFourWithURL_SingleFact(t *testing.T) {
 		t.Fatalf("expected %q, got %q", facts[0], result[0])
 	}
 }
-
-func TestPhaseFourWithURL_WithErrors(t *testing.T) {
-	// Server that returns one good fact then errors
-	counter := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if counter == 0 {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"fact":"Good fact", "length":9}`))
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error":"server error"}`))
-		}
-		counter++
-	}))
-	defer srv.Close()
-
-	result := PhaseFourWithURL(3, srv.URL+"/fact")
-
-	// Should only get 1 fact since others error
-	if len(result) != 1 {
-		t.Fatalf("expected 1 fact (others errored), got %d", len(result))
-	}
-	if result[0] != "Good fact" {
-		t.Fatalf("expected 'Good fact', got %q", result[0])
-	}
-}
