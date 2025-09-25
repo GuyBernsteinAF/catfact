@@ -18,8 +18,6 @@ import (
 	logger "gitlab.appsflyer.com/go/af-go-logger/v1"
 )
 
-var l logger.Logger
-
 type ErrorResponse struct {
 	Message string `json:"message"`
 }
@@ -72,6 +70,7 @@ func phaseThreeAPI(w http.ResponseWriter, req *http.Request) {
 }
 
 func phaseFourAPI(w http.ResponseWriter, req *http.Request) {
+	l := logger.NewLogger()
 	start := time.Now()
 	requestLogger := l.WithFields(logger.Fields{
 		"endpoint": "/cat-facts",
