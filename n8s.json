@@ -13,7 +13,7 @@
       "id": "cat-facts",
       "image": {
         "mode": "default",
-        "service": "space-cadets-cat-facts",
+        "service": "cat-facts-guy-bernstein",
         "branch": "main",
         "runCommand": "./server"
       },
