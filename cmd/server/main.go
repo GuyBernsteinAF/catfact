@@ -344,6 +344,7 @@ func main() {
 	l := logger.NewLogger()
 	// Log a simple message
 	l.Infof("Hello")
+	l.Errorf("Error!!!!")
 	// Start Admin API in a separate goroutine
 	go startAdminServer()
 
