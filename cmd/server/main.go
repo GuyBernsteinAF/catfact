@@ -12,7 +12,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
+
+	logger "gitlab.appsflyer.com/go/af-go-logger/v1"
 )
 
 type ErrorResponse struct {
@@ -55,18 +58,26 @@ func captureStdout(f func()) string {
 }
 
 func phaseOneAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseOne))
+	fmt.Fprint(w, captureStdout(internal.PhaseOne))
 }
 
 func phaseTwoAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseTwo))
+	fmt.Fprint(w, captureStdout(internal.PhaseTwo))
 }
 
 func phaseThreeAPI(w http.ResponseWriter, req *http.Request) {
-	fmt.Fprintf(w, captureStdout(internal.PhaseThree))
+	fmt.Fprint(w, captureStdout(internal.PhaseThree))
 }
 
 func phaseFourAPI(w http.ResponseWriter, req *http.Request) {
+	l := logger.NewLogger()
+	start := time.Now()
+	requestLogger := l.WithFields(logger.Fields{
+		"endpoint": "/cat-facts",
+		"method":   req.Method,
+		"ip":       req.RemoteAddr,
+	})
+
 	name := req.URL.Query().Get("name")
 	amount := req.URL.Query().Get("amount")
 	w.Header().Set("Content-Type", "application/json")
@@ -84,6 +95,13 @@ func phaseFourAPI(w http.ResponseWriter, req *http.Request) {
 	res.Facts = internal.PhaseFour(intAmount)
 	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(res)
+
+	requestLogger.InfoWithFields("cat-facts request completed", logger.Fields{
+		"duration_ms": time.Since(start).Milliseconds(),
+		"name":        name,
+		"fact_count":  amount,
+		"facts":       res.Facts,
+	})
 	return
 
 }
@@ -323,6 +341,10 @@ func startAdminServer() {
 }
 
 func main() {
+	l := logger.NewLogger()
+	// Log a simple message
+	l.Infof("Hello")
+	l.Errorf("Error!!!!")
 	// Start Admin API in a separate goroutine
 	go startAdminServer()
 

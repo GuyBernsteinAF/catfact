@@ -12,6 +12,7 @@ USER docker
 WORKDIR /home/docker
 
 COPY go.mod ./
+COPY go.sum ./
 
 # by running the go mod tidy command before copying the other Go files, subsequent build will be faster when there are only changes in Code and not in Dependencies
 RUN go mod download
